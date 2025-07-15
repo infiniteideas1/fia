@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Farm Intruder Alert</title>
+  <title>Farm Intruder Alert System</title>
   <style>
     body {
       margin: 0;
@@ -22,7 +22,7 @@
       text-align: center;
       font-size: 1.2rem;
       font-weight: bold;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
     }
     .notification {
       position: absolute;
@@ -38,7 +38,7 @@
       font-size: 0.8rem;
       position: absolute;
       top: -5px;
-      right: -5px;
+      right: -10px;
     }
     main {
       width: 100%;
@@ -89,7 +89,7 @@
 
 <header>
   📡 Farm Intruder Alert System<br>Great Heights Academy, Abuja
-  <div class="notification" id="notifIcon">
+  <div class="notification">
     🔔<span class="badge" id="notifCount">0</span>
   </div>
 </header>
@@ -110,10 +110,15 @@
   const BUCKET = 'photo';
   let allPhotos = [];
 
+  function getPublicUrl(filename) {
+    return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(filename)}`;
+  }
+
   async function listPhotos() {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100`, {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100&sortBy=created_at&order=desc`, {
       headers: {
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
       }
     });
     const data = await res.json();
@@ -122,12 +127,14 @@
 
   function extractDate(fileName) {
     const ts = parseInt(fileName.split('_')[0]);
-    const date = new Date(ts);
-    return date.toISOString().split('T')[0]; // yyyy-mm-dd
+    if (!isNaN(ts)) {
+      return new Date(ts).toISOString().split('T')[0];
+    }
+    return '';
   }
 
   function updateFilterOptions(photos) {
-    const uniqueDates = [...new Set(photos.map(p => extractDate(p.name)))];
+    const uniqueDates = [...new Set(photos.map(p => extractDate(p.name)).filter(Boolean))];
     const filter = document.getElementById('dateFilter');
     filter.innerHTML = '<option value="">📅 Filter by Day</option>';
     uniqueDates.forEach(date => {
@@ -141,21 +148,24 @@
   function showPhotos(photos) {
     const grid = document.getElementById('photoGrid');
     grid.innerHTML = '';
-    photos.slice(-9).reverse().forEach(p => {
+    photos.slice(0, 9).forEach(p => {
       const box = document.createElement('div');
       box.className = 'photo-box';
       const img = document.createElement('img');
-      img.src = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${p.name}`;
+      img.src = getPublicUrl(p.name);
+      img.alt = p.name;
       box.appendChild(img);
       grid.appendChild(box);
     });
 
-    // Update notification badge
     document.getElementById('notifCount').textContent = photos.length;
   }
 
   async function loadPhotos() {
     allPhotos = await listPhotos();
+    if (!allPhotos.length) {
+      document.getElementById('photoGrid').innerHTML = '<p>No photos found.</p>';
+    }
     showPhotos(allPhotos);
     updateFilterOptions(allPhotos);
   }
@@ -168,9 +178,6 @@
     const filtered = allPhotos.filter(p => extractDate(p.name) === date);
     showPhotos(filtered);
   }
-
-  // Auto-load once
-  loadPhotos();
 </script>
 
 </body>
