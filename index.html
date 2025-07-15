@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Farm Intruder Alert</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      background: #005f73;
+      color: white;
+      width: 100%;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .notification {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      font-size: 1.5rem;
+    }
+    .badge {
+      background: red;
+      color: white;
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+    main {
+      width: 100%;
+      max-width: 800px;
+      padding: 1rem;
+    }
+    button {
+      padding: 1rem;
+      width: 100%;
+      font-size: 1rem;
+      background: #0a9396;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    select {
+      padding: 0.7rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+    }
+    .photo-box {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1;
+    }
+    .photo-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  📡 Farm Intruder Alert System<br>Great Heights Academy, Abuja
+  <div class="notification" id="notifIcon">
+    🔔<span class="badge" id="notifCount">0</span>
+  </div>
+</header>
+
+<main>
+  <button onclick="loadPhotos()">👁 View Farm Camera</button>
+  <select id="dateFilter" onchange="filterByDate(this.value)">
+    <option value="">📅 Filter by Day</option>
+  </select>
+  <div class="grid" id="photoGrid">
+    <!-- Photos will appear here -->
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
+  const BUCKET = 'photo';
+  let allPhotos = [];
+
+  async function listPhotos() {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100`, {
+      headers: {
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      }
+    });
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }
+
+  function extractDate(fileName) {
+    const ts = parseInt(fileName.split('_')[0]);
+    const date = new Date(ts);
+    return date.toISOString().split('T')[0]; // yyyy-mm-dd
+  }
+
+  function updateFilterOptions(photos) {
+    const uniqueDates = [...new Set(photos.map(p => extractDate(p.name)))];
+    const filter = document.getElementById('dateFilter');
+    filter.innerHTML = '<option value="">📅 Filter by Day</option>';
+    uniqueDates.forEach(date => {
+      const opt = document.createElement('option');
+      opt.value = date;
+      opt.textContent = date;
+      filter.appendChild(opt);
+    });
+  }
+
+  function showPhotos(photos) {
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '';
+    photos.slice(-9).reverse().forEach(p => {
+      const box = document.createElement('div');
+      box.className = 'photo-box';
+      const img = document.createElement('img');
+      img.src = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${p.name}`;
+      box.appendChild(img);
+      grid.appendChild(box);
+    });
+
+    // Update notification badge
+    document.getElementById('notifCount').textContent = photos.length;
+  }
+
+  async function loadPhotos() {
+    allPhotos = await listPhotos();
+    showPhotos(allPhotos);
+    updateFilterOptions(allPhotos);
+  }
+
+  function filterByDate(date) {
+    if (!date) {
+      showPhotos(allPhotos);
+      return;
+    }
+    const filtered = allPhotos.filter(p => extractDate(p.name) === date);
+    showPhotos(filtered);
+  }
+
+  // Auto-load once
+  loadPhotos();
+</script>
+
+</body>
+</html>
