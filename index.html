@@ -83,7 +83,7 @@
 </head>
 <body>
   <header>
-    📡 Farm Intruder Alert System<br />Great Heights Academy, kado Abuja
+    📡 Farm Intruder Alert System<br />Great Heights Academy, Abuja
     <div class="notification">
       🔔 <span class="badge" id="notifCount">0</span>
     </div>
@@ -95,7 +95,7 @@
       <option value="">📅 Filter by Day</option>
     </select>
     <div class="grid" id="photoGrid">
-      <!-- Photos appear here -->
+      <!-- Photos will load here -->
     </div>
   </main>
 
@@ -103,9 +103,7 @@
     const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
     const SUPABASE_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
-    const PROJECT_ID = 'wawksfbixarnqxopjclm';
     const BUCKET = 'photo';
-
     let allPhotos = [];
 
     function getPhotoURL(name) {
@@ -164,8 +162,6 @@
           headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'x-project-ref': PROJECT_ID,
           },
         });
 
