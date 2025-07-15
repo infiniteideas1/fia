@@ -84,7 +84,7 @@
 <body>
 
 <header>
-  📡 Farm Intruder Alert System<br>Great Heights Academy, Abuja
+  📡 Farm Intruder Alert System<br>Great Heights Academy, Abuja.
   <div class="notification">
     🔔 <span class="badge" id="notifCount">0</span>
   </div>
@@ -106,16 +106,14 @@
   const BUCKET = 'photo';
   let allPhotos = [];
 
-  function getPhotoURL(fileName) {
-    return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(fileName)}`;
+  function getPhotoURL(name) {
+    return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(name)}`;
   }
 
-  function extractDateFromFilename(filename) {
-    const parts = filename.split('_');
-    const timestamp = parseInt(parts[0]);
+  function extractDate(name) {
+    const timestamp = parseInt(name.split('_')[0]);
     if (!isNaN(timestamp)) {
-      const date = new Date(timestamp);
-      return date.toISOString().split('T')[0];
+      return new Date(timestamp).toISOString().split('T')[0];
     }
     return 'Unknown';
   }
@@ -146,35 +144,37 @@
     document.getElementById('notifCount').textContent = photos.length;
   }
 
-  function filterPhotos(selectedDate) {
-    if (!selectedDate) {
+  function filterPhotos(date) {
+    if (!date) {
       renderPhotos(allPhotos);
       return;
     }
-    const filtered = allPhotos.filter(p => extractDateFromFilename(p.name) === selectedDate);
+    const filtered = allPhotos.filter(p => extractDate(p.name) === date);
     renderPhotos(filtered);
   }
 
   async function loadPhotos() {
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?sortBy=created_at&order=desc`, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json'
+    const url = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?sortBy=created_at&order=desc`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        }
+      });
+      const result = await response.json();
+      if (!Array.isArray(result)) {
+        alert("❌ Supabase error:\n" + (result.message || "Unknown error"));
+        return;
       }
-    });
-
-    const result = await response.json();
-    if (!Array.isArray(result)) {
-      alert("Failed to load photos.");
-      return;
+      allPhotos = result;
+      renderPhotos(allPhotos);
+      const uniqueDates = [...new Set(allPhotos.map(p => extractDate(p.name)))];
+      updateFilterDropdown(uniqueDates);
+    } catch (e) {
+      alert("❌ Network or parse error");
+      console.error(e);
     }
-
-    allPhotos = result;
-    renderPhotos(allPhotos);
-
-    const uniqueDates = [...new Set(allPhotos.map(p => extractDateFromFilename(p.name)))];
-    updateFilterDropdown(uniqueDates);
   }
 </script>
 
