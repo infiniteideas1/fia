@@ -84,7 +84,7 @@
 </head>
 <body>
   <header>
-    📡 Farm Intruder Alert System<br />Great Heights Academy, Abuja Nigeria
+    📡 Farm Intruder Alert System<br />Great Heights Academy, Abuja
     <div class="notification">
       🔔 <span class="badge" id="notifCount">0</span>
     </div>
@@ -101,8 +101,9 @@
   </main>
 
   <script>
-    const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
+    // ✅ DEMO SUPABASE
+    const SUPABASE_URL = 'https://fwywogbexvkdopjzmhyo.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3eXdvZ2JleHZrZG9wanptaHlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.OJKZfEmY2pVhql_LIQMu25WiTszEmA8mDgxyq8jQF_A';
     const BUCKET = 'photo';
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let allPhotos = [];
@@ -159,6 +160,12 @@
       if (error) {
         alert('❌ Supabase error:\n' + error.message);
         console.error(error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert('✅ No photos found in bucket.');
+        console.log('Data is empty:', data);
         return;
       }
 
