@@ -34,7 +34,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    select, button {
+    select, button, input {
       padding: 0.5rem;
       font-size: 1rem;
     }
@@ -46,10 +46,10 @@
 
 <div class="controls">
   <input type="date" id="filterDate">
-  <button onclick="loadPhotos()">🔄 Refresh</button>
+  <button onclick="loadPhotos()">🔄 Refreshi</button>
 </div>
 
-<div class="grid" id="photoGrid"></div>
+<div class="grid" id="photoGrid">Loading...</div>
 
 <script>
   const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
@@ -61,36 +61,44 @@
     const dateFilter = document.getElementById('filterDate').value;
     grid.innerHTML = 'Loading...';
 
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100&sortBy=created_at`, {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_KEY}`
+    try {
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100&sortBy=created_at`, {
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        grid.innerHTML = `❌ Failed to load photos.<br><b>Status:</b> ${res.status}<br><b>Message:</b> ${errText}`;
+        return;
       }
-    });
 
-    if (!res.ok) {
-      grid.innerHTML = `❌ Failed to load photos.`;
-      return;
+      const files = await res.json();
+      const publicBase = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
+
+      const filtered = files.filter(file => {
+        if (!dateFilter) return true;
+        const ts = file.name.split('_')[0];
+        if (!/^\d+$/.test(ts)) return false;
+        const fileDate = new Date(parseInt(ts));
+        const selectedDate = new Date(dateFilter);
+        return fileDate.toDateString() === selectedDate.toDateString();
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '📭 No photos found for selected date.';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(file => {
+        const url = publicBase + encodeURIComponent(file.name);
+        return `<img src="${url}" alt="${file.name}">`;
+      }).join('');
+
+    } catch (err) {
+      grid.innerHTML = `❌ JavaScript Error:<br>${err.message}`;
     }
-
-    const files = await res.json();
-    const publicBase = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
-
-    const filtered = files.filter(file => {
-      if (!dateFilter) return true;
-      const fileDate = new Date(parseInt(file.name.split('_')[0]));
-      const selectedDate = new Date(dateFilter);
-      return fileDate.toDateString() === selectedDate.toDateString();
-    });
-
-    if (filtered.length === 0) {
-      grid.innerHTML = 'No photos found for selected date.';
-      return;
-    }
-
-    grid.innerHTML = filtered.map(file => {
-      const url = publicBase + encodeURIComponent(file.name);
-      return `<img src="${url}" alt="${file.name}">`;
-    }).join('');
   }
 
   window.onload = loadPhotos;
