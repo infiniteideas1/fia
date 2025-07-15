@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Farm Intruder Alert System</title>
   <style>
     body {
@@ -72,7 +72,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
     .photo-box img {
       width: 100%;
@@ -82,101 +82,113 @@
   </style>
 </head>
 <body>
+  <header>
+    📡 Farm Intruder Alert System<br />Great Heights Academy, kado Abuja
+    <div class="notification">
+      🔔 <span class="badge" id="notifCount">0</span>
+    </div>
+  </header>
 
-<header>
-  📡 Farm Intruder Alert System<br>Great Heights Academy, Abuja.
-  <div class="notification">
-    🔔 <span class="badge" id="notifCount">0</span>
-  </div>
-</header>
+  <main>
+    <button onclick="loadPhotos()">👁 View Farm Camera</button>
+    <select id="dateFilter" onchange="filterPhotos(this.value)">
+      <option value="">📅 Filter by Day</option>
+    </select>
+    <div class="grid" id="photoGrid">
+      <!-- Photos appear here -->
+    </div>
+  </main>
 
-<main>
-  <button onclick="loadPhotos()">👁 View Farm Camera</button>
-  <select id="dateFilter" onchange="filterPhotos(this.value)">
-    <option value="">📅 Filter by Day</option>
-  </select>
-  <div class="grid" id="photoGrid">
-    <!-- Photos appear here -->
-  </div>
-</main>
+  <script>
+    const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
+    const SUPABASE_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
+    const PROJECT_ID = 'wawksfbixarnqxopjclm';
+    const BUCKET = 'photo';
 
-<script>
-  const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
-  const BUCKET = 'photo';
-  let allPhotos = [];
+    let allPhotos = [];
 
-  function getPhotoURL(name) {
-    return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(name)}`;
-  }
-
-  function extractDate(name) {
-    const timestamp = parseInt(name.split('_')[0]);
-    if (!isNaN(timestamp)) {
-      return new Date(timestamp).toISOString().split('T')[0];
+    function getPhotoURL(name) {
+      return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(name)}`;
     }
-    return 'Unknown';
-  }
 
-  function updateFilterDropdown(dates) {
-    const select = document.getElementById('dateFilter');
-    select.innerHTML = '<option value="">📅 Filter by Day</option>';
-    dates.forEach(date => {
-      const option = document.createElement('option');
-      option.value = date;
-      option.textContent = date;
-      select.appendChild(option);
-    });
-  }
-
-  function renderPhotos(photos) {
-    const grid = document.getElementById('photoGrid');
-    grid.innerHTML = '';
-    photos.forEach(photo => {
-      const box = document.createElement('div');
-      box.className = 'photo-box';
-      const img = document.createElement('img');
-      img.src = getPhotoURL(photo.name);
-      img.alt = photo.name;
-      box.appendChild(img);
-      grid.appendChild(box);
-    });
-    document.getElementById('notifCount').textContent = photos.length;
-  }
-
-  function filterPhotos(date) {
-    if (!date) {
-      renderPhotos(allPhotos);
-      return;
+    function extractDate(name) {
+      const timestamp = parseInt(name.split('_')[0]);
+      if (!isNaN(timestamp)) {
+        return new Date(timestamp).toISOString().split('T')[0];
+      }
+      return 'Unknown';
     }
-    const filtered = allPhotos.filter(p => extractDate(p.name) === date);
-    renderPhotos(filtered);
-  }
 
-  async function loadPhotos() {
-    const url = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?sortBy=created_at&order=desc`;
-    try {
-      const response = await fetch(url, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        }
+    function updateFilterDropdown(dates) {
+      const select = document.getElementById('dateFilter');
+      select.innerHTML = '<option value="">📅 Filter by Day</option>';
+      dates.forEach((date) => {
+        const option = document.createElement('option');
+        option.value = date;
+        option.textContent = date;
+        select.appendChild(option);
       });
-      const result = await response.json();
-      if (!Array.isArray(result)) {
-        alert("❌ Supabase error:\n" + (result.message || "Unknown error"));
+    }
+
+    function renderPhotos(photos) {
+      const grid = document.getElementById('photoGrid');
+      grid.innerHTML = '';
+      photos.forEach((photo) => {
+        const box = document.createElement('div');
+        box.className = 'photo-box';
+        const img = document.createElement('img');
+        img.src = getPhotoURL(photo.name);
+        img.alt = photo.name;
+        box.appendChild(img);
+        grid.appendChild(box);
+      });
+      document.getElementById('notifCount').textContent = photos.length;
+    }
+
+    function filterPhotos(date) {
+      if (!date) {
+        renderPhotos(allPhotos);
         return;
       }
-      allPhotos = result;
-      renderPhotos(allPhotos);
-      const uniqueDates = [...new Set(allPhotos.map(p => extractDate(p.name)))];
-      updateFilterDropdown(uniqueDates);
-    } catch (e) {
-      alert("❌ Network or parse error");
-      console.error(e);
+      const filtered = allPhotos.filter((p) => extractDate(p.name) === date);
+      renderPhotos(filtered);
     }
-  }
-</script>
 
+    async function loadPhotos() {
+      const endpoint = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?sortBy=created_at&order=desc`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'x-project-ref': PROJECT_ID,
+          },
+        });
+
+        const result = await response.json();
+
+        if (!Array.isArray(result)) {
+          alert('❌ Supabase error:\n' + (result.message || 'Unknown error'));
+          console.error(result);
+          return;
+        }
+
+        allPhotos = result;
+        renderPhotos(allPhotos);
+
+        const uniqueDates = [
+          ...new Set(allPhotos.map((p) => extractDate(p.name))),
+        ];
+        updateFilterDropdown(uniqueDates);
+      } catch (err) {
+        alert('❌ Failed to fetch photos');
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>
