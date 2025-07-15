@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Farm Intruder Alert System</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
     body {
       margin: 0;
@@ -83,7 +84,7 @@
 </head>
 <body>
   <header>
-    📡 Farm Intruder Alert System<br />Great Heights Academy, Abuja
+    📡 Farm Intruder Alert System<br />Great Heights Academy, Abuja Nigeria
     <div class="notification">
       🔔 <span class="badge" id="notifCount">0</span>
     </div>
@@ -101,14 +102,10 @@
 
   <script>
     const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
-    const SUPABASE_KEY =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
     const BUCKET = 'photo';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let allPhotos = [];
-
-    function getPhotoURL(name) {
-      return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${encodeURIComponent(name)}`;
-    }
 
     function extractDate(name) {
       const timestamp = parseInt(name.split('_')[0]);
@@ -136,7 +133,7 @@
         const box = document.createElement('div');
         box.className = 'photo-box';
         const img = document.createElement('img');
-        img.src = getPhotoURL(photo.name);
+        img.src = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${photo.name}`;
         img.alt = photo.name;
         box.appendChild(img);
         grid.appendChild(box);
@@ -154,36 +151,22 @@
     }
 
     async function loadPhotos() {
-      const endpoint = `${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?sortBy=created_at&order=desc`;
+      const { data, error } = await supabase.storage.from(BUCKET).list('', {
+        sortBy: { column: 'created_at', order: 'desc' },
+        limit: 100
+      });
 
-      try {
-        const response = await fetch(endpoint, {
-          method: 'GET',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-        });
-
-        const result = await response.json();
-
-        if (!Array.isArray(result)) {
-          alert('❌ Supabase error:\n' + (result.message || 'Unknown error'));
-          console.error(result);
-          return;
-        }
-
-        allPhotos = result;
-        renderPhotos(allPhotos);
-
-        const uniqueDates = [
-          ...new Set(allPhotos.map((p) => extractDate(p.name))),
-        ];
-        updateFilterDropdown(uniqueDates);
-      } catch (err) {
-        alert('❌ Failed to fetch photos');
-        console.error(err);
+      if (error) {
+        alert('❌ Supabase error:\n' + error.message);
+        console.error(error);
+        return;
       }
+
+      allPhotos = data;
+      renderPhotos(allPhotos);
+
+      const uniqueDates = [...new Set(allPhotos.map((p) => extractDate(p.name)))];
+      updateFilterDropdown(uniqueDates);
     }
   </script>
 </body>
