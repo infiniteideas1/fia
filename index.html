@@ -1,108 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>View Farm Photos</title>
+  <title>View Uploaded Photos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: sans-serif;
-      margin: 0;
-      background: #f5f5f5;
-    }
-    header {
-      background: green;
-      color: white;
-      padding: 1rem;
+      padding: 20px;
       text-align: center;
-      font-size: 1.5rem;
+      background: #f0f0f0;
     }
-    .controls {
-      padding: 1rem;
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 10px;
-      padding: 1rem;
-    }
-    .grid img {
+    img {
       width: 100%;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    select, button, input {
-      padding: 0.5rem;
-      font-size: 1rem;
+      max-width: 400px;
+      margin: 10px auto;
+      display: block;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
+  <h2>📸 Uploaded Photos</h2>
+  <div id="photos">Loading...</div>
 
-<header>🌾 Farm Camera Viewer</header>
+  <script>
+    const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
+    const BUCKET = 'photo';
 
-<div class="controls">
-  <input type="date" id="filterDate">
-  <button onclick="loadPhotos()">🔄 Refreshi</button>
-</div>
-
-<div class="grid" id="photoGrid">Loading...</div>
-
-<script>
-  const SUPABASE_URL = 'https://wawksfbixarnqxopjclm.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhd2tzZmJpeGFybnF4b3BqY2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1ODk4MDAsImV4cCI6MjA2ODE2NTgwMH0.3Oll7YBP-Q0VUaOnoOw5VMdbOrIqDC0wjlXpz23J8eQ';
-  const BUCKET = 'photo';
-
-  async function loadPhotos() {
-    const grid = document.getElementById('photoGrid');
-    const dateFilter = document.getElementById('filterDate').value;
-    grid.innerHTML = 'Loading...';
-
-    try {
-      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}?limit=100&sortBy=created_at`, {
+    async function loadPhotos() {
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${BUCKET}`, {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_KEY}`
+          Authorization: `Bearer ${SUPABASE_KEY}`
         }
       });
 
+      const container = document.getElementById('photos');
+
       if (!res.ok) {
-        const errText = await res.text();
-        grid.innerHTML = `❌ Failed to load photos.<br><b>Status:</b> ${res.status}<br><b>Message:</b> ${errText}`;
+        container.innerHTML = '❌ Failed to load photos.';
         return;
       }
 
       const files = await res.json();
-      const publicBase = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
 
-      const filtered = files.filter(file => {
-        if (!dateFilter) return true;
-        const ts = file.name.split('_')[0];
-        if (!/^\d+$/.test(ts)) return false;
-        const fileDate = new Date(parseInt(ts));
-        const selectedDate = new Date(dateFilter);
-        return fileDate.toDateString() === selectedDate.toDateString();
-      });
-
-      if (filtered.length === 0) {
-        grid.innerHTML = '📭 No photos found for selected date.';
+      if (!files.length) {
+        container.innerHTML = '📂 No photos uploaded yet.';
         return;
       }
 
-      grid.innerHTML = filtered.map(file => {
-        const url = publicBase + encodeURIComponent(file.name);
-        return `<img src="${url}" alt="${file.name}">`;
-      }).join('');
+      container.innerHTML = '';
 
-    } catch (err) {
-      grid.innerHTML = `❌ JavaScript Error:<br>${err.message}`;
+      files.forEach(file => {
+        const img = document.createElement('img');
+        img.src = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${file.name}`;
+        img.alt = file.name;
+        container.appendChild(img);
+      });
     }
-  }
 
-  window.onload = loadPhotos;
-</script>
-
+    loadPhotos();
+  </script>
 </body>
 </html>
